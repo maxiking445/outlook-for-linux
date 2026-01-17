@@ -3,7 +3,7 @@ An unofficial Linux desktop wrapper for Microsoft Outlook built with Tauri.
 
 ## Why Tauri?
 This project wraps the existing Outlook web app in a lightweight Linux desktop client.
-Unlike Electron, which tends to produce very large apps, Tauri keeps the app small and easy to build.
+I choosed it because unlike Electron, Tauri keeps the app very small with less deps and is also easy to build.
 
 
 ## Install
@@ -20,3 +20,11 @@ npm run tauri
 ## build 
 
 npm run tauri:build
+
+### generate logo
+
+npx tauri icon Logo_outlook.png
+
+## deps
+
+sudo apt install libayatana-appindicator3-dev libgtk-3-dev
