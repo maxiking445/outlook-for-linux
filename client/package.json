@@ -6,7 +6,7 @@
   "scripts": {
     "start": "vite",
     "build": "vite build",
-    "tauri": "tauri dev",
+    "tauri:dev": "tauri dev",
     "tauri:build": "npm run build && tauri build",
     "preview": "vite preview"
   },
