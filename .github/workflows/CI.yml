@@ -1,0 +1,55 @@
+name: Tauri CI Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -------------------------
+      # System Dependencies für Tauri / GTK
+      # -------------------------
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libglib2.0-dev \
+            libgtk-3-dev \
+            pkg-config \
+            build-essential \
+            libwebkit2gtk-4.1-dev
+            
+      # -------------------------
+      # Node.js Setup + Frontend
+      # -------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        working-directory: ./client
+        run: npm install
+
+      - name: Build frontend
+        working-directory: ./client
+        run: npm run build
+
+      # -------------------------
+      # Tauri Build (CI)
+      # -------------------------
+      - name: Tauri CI Build
+        uses: tauri-apps/tauri-action@dev
+        with:
+          projectPath: ./client/src-tauri
+          skipGithubRelease: true

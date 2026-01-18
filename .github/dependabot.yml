@@ -1,0 +1,17 @@
+version: 2
+updates:
+  # Rust / Tauri Backend
+  - package-ecosystem: "cargo"
+    directory: "/client/src-tauri"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "deps"
+
+  # Frontend (Node / Vue / React / etc.)
+  - package-ecosystem: "npm"
+    directory: "/client"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "deps"
