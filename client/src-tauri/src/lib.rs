@@ -3,10 +3,8 @@ use std::process::Command;
 use std::thread;
 use std::time::Duration;
 use tauri::menu::MenuItemBuilder;
-use tauri::AppHandle;
 use tauri::WebviewWindow;
 use tauri::{menu::MenuBuilder, tray::TrayIconBuilder, Manager, WindowEvent};
-use tauri_plugin_notification::NotificationExt;
 
 pub fn run() {
     tauri::Builder::default()
