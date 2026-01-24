@@ -13,6 +13,8 @@
     "withGlobalTauri": true,
     "windows": [
       {
+        "url": "https://outlook.office.com",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
         "title": "Outlook for Linux",
         "width": 1200,
         "height": 800,
