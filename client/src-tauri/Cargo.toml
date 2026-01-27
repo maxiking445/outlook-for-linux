@@ -26,3 +26,5 @@ tauri = { version = "2.9.5", features = ["tray-icon", "devtools"] }
 tauri-plugin-log = "2"
 tauri-plugin-notification = "2"
 futures = "0.3"
+tauri-plugin-dialog = "2"
+base64 = "0.22.1"
