@@ -78,5 +78,5 @@ jobs:
           tagName: "v${{ steps.bump_version.outputs.version }}"
           releaseName: "Linux Release ${{ steps.bump_version.outputs.version }}"
           releaseBody: "Automated release of Linux Tauri App version ${{ steps.bump_version.outputs.version }}"
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
