@@ -16,11 +16,17 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+                if let Some(window) = app.get_webview_window("main") {
+                    window.set_focus().unwrap();
+                    window.show().unwrap();
+                }
+        }))
         .invoke_handler(tauri::generate_handler![send_notification, download])
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
-                let _ = window.hide();
+                let _ = window.minimize().unwrap();
             }
         })
         .setup(|app| {
@@ -49,10 +55,12 @@ pub fn run() {
                     "quit" => app.exit(0),
                     "hide" => {
                         let window = app.get_webview_window("main").unwrap();
-                        window.hide().unwrap();
+                        window.minimize().unwrap();
                     }
                     "show" => {
                         let window = app.get_webview_window("main").unwrap();
+                        window.hide().unwrap();
+                        window.unminimize().unwrap();
                         window.show().unwrap();
                         let _ = window.set_focus();
                     }
@@ -116,23 +124,23 @@ fn send_notification(title: String, body: String) -> Result<(), String> {
 
 pub fn open_image_dialog(app: tauri::AppHandle, source_file: PathBuf, file_name: &str) {
     app.dialog().file()
-     .set_file_name(file_name)
-    .save_file(move |target_path| {
-        if let Some(target) = target_path {
-            match target {
-                tauri_plugin_dialog::FilePath::Path(path) => {
-                    if let Err(err) = std::fs::copy(&source_file, &path) {
-                        eprintln!("Copy failed!: {}", err);
-                    } else {
-                        println!("Data saved under: {:?}", path);
+        .set_file_name(file_name)
+        .save_file(move |target_path| {
+            if let Some(target) = target_path {
+                match target {
+                    tauri_plugin_dialog::FilePath::Path(path) => {
+                        if let Err(err) = std::fs::copy(&source_file, &path) {
+                            eprintln!("Copy failed!: {}", err);
+                        } else {
+                            println!("Data saved under: {:?}", path);
+                        }
+                    }
+                    tauri_plugin_dialog::FilePath::Url(url) => {
+                        eprintln!("URL Path not supported!: {}", url);
                     }
                 }
-                tauri_plugin_dialog::FilePath::Url(url) => {
-                    eprintln!("URL Path not supported!: {}", url);
-                }
             }
-        }
-    });
+        });
 }
 
 use serde_json::Value;
@@ -141,9 +149,9 @@ use base64::{Engine as _, engine::general_purpose};
 #[tauri::command]
 async fn download(app: tauri::AppHandle, payload: serde_json::Value) {
     println!("Payload: {:?}", payload);
-    
+
     let payload_str = payload.to_string();
-    
+
     let data_start = payload_str.find("\"data\":\"").unwrap() + 8;
     let data_end = payload_str[data_start..].find("\"").unwrap();
     let data_b64 = payload_str[data_start..data_start + data_end].to_string();
@@ -169,15 +177,15 @@ async fn download(app: tauri::AppHandle, payload: serde_json::Value) {
     } else {
         "bin"
     };
-    
+
     let temp_file = std::env::temp_dir()
         .join(format!("outlook-download.{}", file_ext));
-    
+
     std::fs::write(&temp_file, &bytes)
         .expect("Temp file write failed");
-    
+
     println!("Saved Blob to: {:?}", temp_file);
-    
+
     // Open Dialog
     open_image_dialog(app, temp_file, &format!("{}.{}", file_name, file_ext));
 
