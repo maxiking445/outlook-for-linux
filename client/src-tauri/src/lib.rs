@@ -12,6 +12,7 @@ use tauri::WebviewWindow;
 use tauri::{menu::MenuBuilder, tray::TrayIconBuilder, Manager, WindowEvent};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_dialog::FilePath;
+use tauri::path::BaseDirectory;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -34,10 +35,14 @@ pub fn run() {
 
             std::thread::spawn(move || {
                 std::thread::sleep(Duration::from_secs(3));
+
                 let window_clone = window.clone();
-                inject_notification_js(window_clone);
-                let window_clone = window.clone();
-                download_hook_js(window_clone);
+                inject_js_resource(&window, "notification.js")
+                    .expect("failed to inject notification.js");
+                inject_js_resource(&window, "notification-extractor.js")
+                    .expect("failed to inject notification-extractor.js");
+                inject_js_resource(&window, "download-hook.js")
+                    .expect("failed to inject download-hook.js");
             });
 
             let hide = MenuItemBuilder::new("Hide").id("hide").build(app).unwrap();
@@ -73,26 +78,21 @@ pub fn run() {
         .expect("Something wrong when running tauri application");
 }
 
-fn inject_notification_js(window: WebviewWindow) {
-    let js_content =
-        fs::read_to_string("../src/notification-extractor.js").expect("extractor.js not found!");
 
-    window.eval(&js_content).expect("Injection failed!");
-    println!("extractor.js injected!");
+pub fn inject_js_resource(
+    window: &WebviewWindow,
+    relative_path: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
 
-    let js_content =
-        fs::read_to_string("../src/notification.js").expect("notification.js not found!");
+    let app = window.app_handle();
+    let path = app
+        .path()
+        .resolve(relative_path, BaseDirectory::Resource)?;
 
-    window.eval(&js_content).expect("Injection failed!");
-    println!("notification.js injected!");
-}
-
-fn download_hook_js(window: WebviewWindow) {
-    let js_content =
-        fs::read_to_string("../src/download-hook.js").expect("download-hook.js not found!");
-
-    window.eval(&js_content).expect("Injection failed!");
-    println!("download-hook.js injected!");
+    let js_content = fs::read_to_string(&path)?;
+    window.eval(&js_content)?;
+    println!("injected resource JS: {}", relative_path);
+    Ok(())
 }
 
 // Sends a desktop notification -> workarround for linux see -> https://github.com/tauri-apps/plugins-workspace/issues/2566

@@ -27,6 +27,21 @@
     }
   },
   "bundle": {
+    "resources": { "resources/": "" },
+    "linux": {
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.0-dev",
+          "libwebkit2gtk-4.0-bin",
+          "libwebkit2gtk-4.0-common",
+          "libayatana-appindicator3-dev",
+          "libwebkit2gtk-4.0-37",
+          "libgtk-3-dev",
+          "librsvg2-dev",
+          "libssl-dev"
+        ]
+      }
+    },
     "active": true,
     "targets": "all",
     "icon": [
