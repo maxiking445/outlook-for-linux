@@ -19,6 +19,7 @@
     "@tauri-apps/cli": "^2.9.6",
     "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-notification": "^2.3.3",
+    "@tauri-apps/plugin-opener": "^2.5.3",
     "jsdom": "^27.4.0"
   }
 }
