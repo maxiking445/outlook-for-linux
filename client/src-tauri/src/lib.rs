@@ -1,18 +1,15 @@
 use std::fs;
-use std::fs::File;
-use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
 use std::thread;
 use std::time::Duration;
 use tauri::menu::MenuItemBuilder;
-use tauri::AppHandle;
-use tauri::Listener;
 use tauri::WebviewWindow;
 use tauri::{menu::MenuBuilder, tray::TrayIconBuilder, Manager, WindowEvent};
 use tauri_plugin_dialog::DialogExt;
-use tauri_plugin_dialog::FilePath;
 use tauri::path::BaseDirectory;
+use tauri::webview::DownloadEvent;
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -23,28 +20,64 @@ pub fn run() {
                     window.show().unwrap();
                 }
         }))
-        .invoke_handler(tauri::generate_handler![send_notification, download])
+        
+        .invoke_handler(tauri::generate_handler![send_notification])
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 let _ = window.minimize().unwrap();
             }
         })
+        
         .setup(|app| {
+            let builder = tauri::WebviewWindowBuilder::from_config(
+                app.handle(),
+                &app.config().app.windows[0],
+            )?;
+
+            builder
+                .on_download(|_webview, event| {
+                    match event {
+                        DownloadEvent::Requested { url, destination } => {
+                            println!("Download requested: {}", url);
+                            *destination = std::env::temp_dir().join(destination.file_name().unwrap());
+                        }
+                        DownloadEvent::Finished { path, success, .. } => {
+                            println!("Download finished: {:?}, success={}", path, success);
+
+                            if let Some(path) = path {
+                                let app_handle = _webview.app_handle().clone();
+                                let file_name = path.file_name()
+                                    .unwrap_or_default()
+                                    .to_string_lossy()
+                                    .to_string();
+
+                                open_image_dialog(app_handle, path.clone(), &file_name);
+                            } else {
+                                eprintln!("Download finihsed, with invalid path!!");
+                            }
+                        }
+                        _ => {}
+                    }
+                    true 
+                })
+                .build()?;
+
+
             let window = app.get_webview_window("main").unwrap();
 
             std::thread::spawn(move || {
                 std::thread::sleep(Duration::from_secs(3));
 
-                let window_clone = window.clone();
                 inject_js_resource(&window, "notification.js")
                     .expect("failed to inject notification.js");
                 inject_js_resource(&window, "notification-extractor.js")
                     .expect("failed to inject notification-extractor.js");
-                inject_js_resource(&window, "download-hook.js")
-                    .expect("failed to inject download-hook.js");
             });
 
+
+
+            
             let hide = MenuItemBuilder::new("Hide").id("hide").build(app).unwrap();
             let show = MenuItemBuilder::new("Show").id("show").build(app).unwrap();
             let quit = MenuItemBuilder::new("Quit").id("quit").build(app).unwrap();
@@ -141,53 +174,4 @@ pub fn open_image_dialog(app: tauri::AppHandle, source_file: PathBuf, file_name:
                 }
             }
         });
-}
-
-use serde_json::Value;
-use base64::{Engine as _, engine::general_purpose};
-
-#[tauri::command]
-async fn download(app: tauri::AppHandle, payload: serde_json::Value) {
-    println!("Payload: {:?}", payload);
-
-    let payload_str = payload.to_string();
-
-    let data_start = payload_str.find("\"data\":\"").unwrap() + 8;
-    let data_end = payload_str[data_start..].find("\"").unwrap();
-    let data_b64 = payload_str[data_start..data_start + data_end].to_string();
-    let file_name = payload["payload"]["name"].as_str().unwrap_or("attachment");
-
-    let raw_type = payload_str.split("\"type\":")
-        .nth(1).unwrap()
-        .split('"').nth(1).unwrap_or("pdf")
-        .split(',').next().unwrap_or("pdf")
-        .to_string();
-
-    let bytes = general_purpose::STANDARD
-        .decode(data_b64)
-        .expect("Base64 decode failed");
-
-
-    let file_ext = if raw_type.contains("pdf") {
-        "pdf"
-    } else if raw_type.contains("image") {
-        if raw_type.contains("png") { "png" } else { "jpg" }
-    } else if raw_type.contains("zip") {
-        "zip"
-    } else {
-        "bin"
-    };
-
-    let temp_file = std::env::temp_dir()
-        .join(format!("outlook-download.{}", file_ext));
-
-    std::fs::write(&temp_file, &bytes)
-        .expect("Temp file write failed");
-
-    println!("Saved Blob to: {:?}", temp_file);
-
-    // Open Dialog
-    open_image_dialog(app, temp_file, &format!("{}.{}", file_name, file_ext));
-
-
 }
