@@ -10,6 +10,10 @@ use tauri::WebviewWindow;
 use tauri::{menu::MenuBuilder, tray::TrayIconBuilder, Manager, WindowEvent};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
+use tauri::menu::{
+    SubmenuBuilder,
+};
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -78,10 +82,15 @@ pub fn run() {
             });
 
             let hide = MenuItemBuilder::new("Hide").id("hide").build(app).unwrap();
+            let report = MenuItemBuilder::new("Report an Issue").id("report").build(app).unwrap();
+            let help_menu = SubmenuBuilder::new(app, "Help")
+                .items(&[&report])
+                .build()
+                .unwrap();
             let show = MenuItemBuilder::new("Show").id("show").build(app).unwrap();
             let quit = MenuItemBuilder::new("Quit").id("quit").build(app).unwrap();
             let menu = MenuBuilder::new(app)
-                .items(&[&hide, &show, &quit])
+                .items(&[&hide, &show, &help_menu, &quit])
                 .build()
                 .unwrap();
 
@@ -93,6 +102,12 @@ pub fn run() {
                     "hide" => {
                         let window = app.get_webview_window("main").unwrap();
                         window.minimize().unwrap();
+                    }
+                    "report" => {
+                        open_in_browser(
+                            app.clone(),
+                            "https://github.com/maxiking445/outlook-for-linux/issues".to_string(),
+                        );
                     }
                     "show" => {
                         let window = app.get_webview_window("main").unwrap();
