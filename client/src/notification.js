@@ -26,7 +26,7 @@ setInterval(() => {
       seenNotifications.add(notificationId);
 
       const notifier = new TauriNotifier();
-      notifier.send("New Mail From: " + data.name, data.title);
+      notifier.send(data.name, data.title);
     }
   }
 
