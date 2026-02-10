@@ -5,6 +5,7 @@ description: |
   An unofficial Linux desktop wrapper for Microsoft Outlook built with Tauri.
 contact: maxiking445@proton.me
 license: MIT
+title: Outlook for Linux
 issues: https://github.com/maxiking445/outlook-for-linux/issues
 source-code: https://github.com/maxiking445/outlook-for-linux
 website: https://github.com/maxiking445/outlook-for-linux
@@ -29,6 +30,8 @@ apps:
 parts:
   outlook-for-linux:
     plugin: dump
-    source: client/src-tauri/target/release
+    source: client/src-tauri/target/binary
+    organize:
+      OutlookClient: OutlookClient
     stage-packages:
       - libwebkit2gtk-4.0-37
