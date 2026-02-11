@@ -1,5 +1,6 @@
 mod commands;
 mod menu;
+mod store;
 mod window;
 
 use tauri::Manager;
@@ -9,6 +10,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
                 window.set_focus().unwrap();
@@ -23,6 +25,7 @@ pub fn run() {
             window::handle_window_event(window, event);
         })
         .setup(|app| {
+            store::setup_store(&app.handle())?;
             window::setup_window(app)?;
             menu::setup_tray_menu(app)?;
             Ok(())
