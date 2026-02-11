@@ -9,12 +9,17 @@ pub fn setup_tray_menu(app: &mut tauri::App) -> Result<(), Box<dyn std::error::E
     let report = MenuItemBuilder::new("Report an Issue")
         .id("report")
         .build(app)?;
+    let version_text = format!("Version: {}", app.package_info().version);
+    let version = MenuItemBuilder::new(&version_text)
+        .id("version")
+        .enabled(false)
+        .build(app)?;
     let help_menu = SubmenuBuilder::new(app, "Help")
-        .items(&[&report])
+        .items(&[&report, &version])
         .build()?;
     let show = MenuItemBuilder::new("Show").id("show").build(app)?;
     let quit = MenuItemBuilder::new("Quit").id("quit").build(app)?;
-    
+
     let menu = MenuBuilder::new(app)
         .items(&[&hide, &show, &help_menu, &quit])
         .build()?;
@@ -44,6 +49,6 @@ pub fn setup_tray_menu(app: &mut tauri::App) -> Result<(), Box<dyn std::error::E
             _ => {}
         })
         .build(app)?;
-    
+
     Ok(())
 }
