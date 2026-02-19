@@ -20,6 +20,6 @@
     "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-notification": "^2.3.3",
     "@tauri-apps/plugin-opener": "^2.5.3",
-    "jsdom": "^28.0.0"
+    "jsdom": "^28.1.0"
   }
 }
