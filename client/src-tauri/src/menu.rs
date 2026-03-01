@@ -22,9 +22,7 @@ pub fn setup_tray_menu(app: &mut tauri::App) -> Result<(), Box<dyn std::error::E
         .build()?;
 
     let store = app.store("settings.json").unwrap();
-    let is_notifcation_enabled = store
-        .get("notifications_enabled")
-        .expect("Failed to get value from store");
+    let is_notifcation_enabled = store.get("notifications_enabled").unwrap_or(json!(true));
 
     let notification_checkbox = CheckMenuItemBuilder::new("Enable Notifications")
         .id("notification_checkbox")
@@ -58,11 +56,12 @@ pub fn setup_tray_menu(app: &mut tauri::App) -> Result<(), Box<dyn std::error::E
             }
             "notification_checkbox" => {
                 let store = app.store("settings.json").unwrap();
-                let current = store
-                    .get("notifications_enabled")
-                    .expect("Failed to get value from store");
+                let current = store.get("notifications_enabled").unwrap_or(json!(true));
 
-                store.set("notifications_enabled", json!(!current.as_bool().unwrap_or(true)));
+                store.set(
+                    "notifications_enabled",
+                    json!(!current.as_bool().unwrap_or(true)),
+                );
                 let _ = store.save();
             }
             "show" => {
