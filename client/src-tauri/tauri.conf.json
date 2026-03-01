@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Outlook for Linux",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "identifier": "dev.maxiking445.outlookforlinux",
   "build": {
     "frontendDist": "../dist",
