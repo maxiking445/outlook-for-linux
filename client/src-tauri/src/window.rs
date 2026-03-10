@@ -4,13 +4,40 @@ use std::thread;
 use std::time::Duration;
 use tauri::path::BaseDirectory;
 use tauri::webview::DownloadEvent;
-use tauri::{AppHandle, Manager, Window, WebviewWindow, WindowEvent};
+use tauri::{AppHandle, Manager, WebviewWindow, Window, WindowEvent};
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_store::StoreExt;
 
 pub fn handle_window_event(window: &Window, event: &WindowEvent) {
-    if let WindowEvent::CloseRequested { api, .. } = event {
-        api.prevent_close();
-        let _ = window.minimize().unwrap();
+    match event {
+        WindowEvent::CloseRequested { api, .. } => {
+            let store = window.app_handle().store("settings.json").unwrap();
+            let quit_on_close = store
+                .get("quit_on_close")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+
+            if quit_on_close {
+                window.app_handle().exit(0);
+            } else {
+                api.prevent_close();
+                let _ = window.hide();
+            }
+        }
+        WindowEvent::Focused(false) => {
+            if window.is_minimized().unwrap_or(false) {
+                let store = window.app_handle().store("settings.json").unwrap();
+                let minimize_to_bg = store
+                    .get("minimize_to_background")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+
+                if minimize_to_bg {
+                    let _ = window.hide();
+                }
+            }
+        }
+        _ => {}
     }
 }
 

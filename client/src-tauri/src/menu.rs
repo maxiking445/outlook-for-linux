@@ -29,8 +29,20 @@ pub fn setup_tray_menu(app: &mut tauri::App) -> Result<(), Box<dyn std::error::E
         .checked(is_notifcation_enabled.as_bool().unwrap_or(true))
         .build(app)?;
 
+    let is_quit_on_close = store.get("quit_on_close").unwrap_or(json!(false));
+    let quit_on_close_checkbox = CheckMenuItemBuilder::new("Quit on Close")
+        .id("quit_on_close_checkbox")
+        .checked(is_quit_on_close.as_bool().unwrap_or(false))
+        .build(app)?;
+
+    let is_minimize_to_background = store.get("minimize_to_background").unwrap_or(json!(false));
+    let minimize_to_bg_checkbox = CheckMenuItemBuilder::new("Minimize to Background")
+        .id("minimize_to_bg_checkbox")
+        .checked(is_minimize_to_background.as_bool().unwrap_or(false))
+        .build(app)?;
+
     let settings_menu = SubmenuBuilder::new(app, "Settings")
-        .items(&[&notification_checkbox])
+        .items(&[&notification_checkbox, &quit_on_close_checkbox, &minimize_to_bg_checkbox])
         .build()?;
     let show = MenuItemBuilder::new("Show").id("show").build(app)?;
     let quit = MenuItemBuilder::new("Quit").id("quit").build(app)?;
@@ -46,7 +58,17 @@ pub fn setup_tray_menu(app: &mut tauri::App) -> Result<(), Box<dyn std::error::E
             "quit" => app.exit(0),
             "hide" => {
                 let window = app.get_webview_window("main").unwrap();
-                window.minimize().unwrap();
+                let store = app.store("settings.json").unwrap();
+                let minimize_to_bg = store
+                    .get("minimize_to_background")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+
+                if minimize_to_bg {
+                    window.hide().unwrap();
+                } else {
+                    window.minimize().unwrap();
+                }
             }
             "report" => {
                 open_in_browser(
@@ -61,6 +83,26 @@ pub fn setup_tray_menu(app: &mut tauri::App) -> Result<(), Box<dyn std::error::E
                 store.set(
                     "notifications_enabled",
                     json!(!current.as_bool().unwrap_or(true)),
+                );
+                let _ = store.save();
+            }
+            "quit_on_close_checkbox" => {
+                let store = app.store("settings.json").unwrap();
+                let current = store.get("quit_on_close").unwrap_or(json!(false));
+
+                store.set(
+                    "quit_on_close",
+                    json!(!current.as_bool().unwrap_or(false)),
+                );
+                let _ = store.save();
+            }
+            "minimize_to_bg_checkbox" => {
+                let store = app.store("settings.json").unwrap();
+                let current = store.get("minimize_to_background").unwrap_or(json!(false));
+
+                store.set(
+                    "minimize_to_background",
+                    json!(!current.as_bool().unwrap_or(false)),
                 );
                 let _ = store.save();
             }
