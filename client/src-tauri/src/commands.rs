@@ -17,7 +17,9 @@ pub fn send_notification(app: AppHandle, title: String, body: String) -> Result<
         thread::spawn(move || {
             let result = Command::new("notify-send")
                 .args([
-                    "--app-name=wngtools",
+                    "--app-name=OutlookClient",
+                    "--icon=mail-unread",
+                    "--category=email.arrived",
                     "--urgency=normal",
                     "--expire-time=8000",
                     "--hint=string:sound-name:message-new-instant",
