@@ -139,4 +139,4 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 #resources directory
-client/src-tauri/resources/*.js
+client/src-tauri/resources/
