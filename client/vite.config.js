@@ -22,6 +22,11 @@ export default defineConfig({
           );
         });
 
+        fs.copyFileSync(
+          resolve(__dirname, "offline.html"),
+          resolve(distDir, "offline.html")
+        );
+
         console.log("JS files copied to dist/");
       },
     },

@@ -1,10 +1,11 @@
 use std::fs;
+use std::net::TcpStream;
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
 use tauri::path::BaseDirectory;
 use tauri::webview::DownloadEvent;
-use tauri::{AppHandle, Manager, WebviewWindow, Window, WindowEvent};
+use tauri::{AppHandle, Manager, Url, WebviewWindow, Window, WindowEvent};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_store::StoreExt;
 
@@ -55,6 +56,17 @@ pub fn setup_window(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Erro
         .build()?;
 
     let window = app.get_webview_window("main").unwrap();
+
+    if !check_internet() {
+        let offline_path = app
+            .handle()
+            .path()
+            .resolve("offline.html", BaseDirectory::Resource)?;
+        let offline_url = Url::from_file_path(&offline_path)
+            .map_err(|_| format!("Invalid path: {:?}", offline_path))?;
+        window.navigate(offline_url)?;
+    }
+
     inject_js_files(window);
 
     Ok(())
@@ -86,10 +98,24 @@ fn handle_download_event(app_handle: AppHandle, event: DownloadEvent) {
     }
 }
 
+fn check_internet() -> bool {
+    use std::net::ToSocketAddrs;
+    let addr = match "outlook.office.com:443".to_socket_addrs() {
+        Ok(mut addrs) => match addrs.next() {
+            Some(addr) => addr,
+            None => return false,
+        },
+        Err(_) => return false,
+    };
+    TcpStream::connect_timeout(&addr, Duration::from_secs(3)).is_ok()
+}
+
 fn inject_js_files(window: WebviewWindow) {
     thread::spawn(move || {
         thread::sleep(Duration::from_secs(3));
 
+        inject_js_resource(&window, "offline-banner.js")
+            .expect("failed to inject offline-banner.js");
         inject_js_resource(&window, "notification.js")
             .expect("failed to inject notification.js");
         inject_js_resource(&window, "notification-extractor.js")
