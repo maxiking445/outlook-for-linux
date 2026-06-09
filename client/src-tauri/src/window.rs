@@ -9,6 +9,12 @@ use tauri::{AppHandle, Manager, Url, WebviewWindow, Window, WindowEvent};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_store::StoreExt;
 
+const MINIMIZED_ARG: &str = "--minimized";
+
+pub fn is_minimized_arg_set(args: impl IntoIterator<Item = impl AsRef<str>>) -> bool {
+    args.into_iter().any(|arg| arg.as_ref() == MINIMIZED_ARG)
+}
+
 pub fn handle_window_event(window: &Window, event: &WindowEvent) {
     match event {
         WindowEvent::CloseRequested { api, .. } => {
@@ -43,10 +49,12 @@ pub fn handle_window_event(window: &Window, event: &WindowEvent) {
 }
 
 pub fn setup_window(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
-    let builder = tauri::WebviewWindowBuilder::from_config(
-        app.handle(),
-        &app.config().app.windows[0],
-    )?;
+    let mut builder =
+        tauri::WebviewWindowBuilder::from_config(app.handle(), &app.config().app.windows[0])?;
+
+    if is_minimized_arg_set(std::env::args()) {
+        builder = builder.visible(false);
+    }
 
     builder
         .on_download(|webview, event| {
@@ -116,12 +124,10 @@ fn inject_js_files(window: WebviewWindow) {
 
         inject_js_resource(&window, "offline-banner.js")
             .expect("failed to inject offline-banner.js");
-        inject_js_resource(&window, "notification.js")
-            .expect("failed to inject notification.js");
+        inject_js_resource(&window, "notification.js").expect("failed to inject notification.js");
         inject_js_resource(&window, "notification-extractor.js")
             .expect("failed to inject notification-extractor.js");
-        inject_js_resource(&window, "url-change.js")
-            .expect("failed to inject url-change.js");
+        inject_js_resource(&window, "url-change.js").expect("failed to inject url-change.js");
     });
 }
 
