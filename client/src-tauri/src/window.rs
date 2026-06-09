@@ -121,9 +121,6 @@ fn check_internet() -> bool {
 fn inject_js_files(window: WebviewWindow) {
     thread::spawn(move || {
         thread::sleep(Duration::from_secs(3));
-
-        inject_js_resource(&window, "offline-banner.js")
-            .expect("failed to inject offline-banner.js");
         inject_js_resource(&window, "notification.js").expect("failed to inject notification.js");
         inject_js_resource(&window, "notification-extractor.js")
             .expect("failed to inject notification-extractor.js");
