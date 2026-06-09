@@ -11,7 +11,11 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_store::Builder::default().build())
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if window::is_minimized_arg_set(args) {
+                return;
+            }
+
             if let Some(window) = app.get_webview_window("main") {
                 window.set_focus().unwrap();
                 window.show().unwrap();
