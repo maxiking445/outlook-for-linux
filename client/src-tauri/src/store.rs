@@ -1,5 +1,4 @@
-use serde_json::json;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
 
 pub fn setup_store(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {

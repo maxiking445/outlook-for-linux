@@ -3,7 +3,6 @@ use serde_json::json;
 use tauri::menu::{CheckMenuItemBuilder, MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::tray::TrayIconBuilder;
 use tauri::Manager;
-use tauri_plugin_store::Store;
 use tauri_plugin_store::StoreExt;
 
 pub fn setup_tray_menu(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
@@ -42,7 +41,11 @@ pub fn setup_tray_menu(app: &mut tauri::App) -> Result<(), Box<dyn std::error::E
         .build(app)?;
 
     let settings_menu = SubmenuBuilder::new(app, "Settings")
-        .items(&[&notification_checkbox, &quit_on_close_checkbox, &minimize_to_bg_checkbox])
+        .items(&[
+            &notification_checkbox,
+            &quit_on_close_checkbox,
+            &minimize_to_bg_checkbox,
+        ])
         .build()?;
     let show = MenuItemBuilder::new("Show").id("show").build(app)?;
     let quit = MenuItemBuilder::new("Quit").id("quit").build(app)?;
@@ -71,7 +74,7 @@ pub fn setup_tray_menu(app: &mut tauri::App) -> Result<(), Box<dyn std::error::E
                 }
             }
             "report" => {
-                open_in_browser(
+                let _ = open_in_browser(
                     app.clone(),
                     "https://github.com/maxiking445/outlook-for-linux/issues".to_string(),
                 );
@@ -90,10 +93,7 @@ pub fn setup_tray_menu(app: &mut tauri::App) -> Result<(), Box<dyn std::error::E
                 let store = app.store("settings.json").unwrap();
                 let current = store.get("quit_on_close").unwrap_or(json!(false));
 
-                store.set(
-                    "quit_on_close",
-                    json!(!current.as_bool().unwrap_or(false)),
-                );
+                store.set("quit_on_close", json!(!current.as_bool().unwrap_or(false)));
                 let _ = store.save();
             }
             "minimize_to_bg_checkbox" => {
