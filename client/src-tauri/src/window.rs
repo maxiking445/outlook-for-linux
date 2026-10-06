@@ -107,7 +107,11 @@ fn handle_download_event(app_handle: AppHandle, event: DownloadEvent) {
     match event {
         DownloadEvent::Requested { url, destination } => {
             println!("Download requested: {}", url);
-            *destination = std::env::temp_dir().join(destination.file_name().unwrap());
+            let file_name = destination
+                .file_name()
+                .map(|name| name.to_owned())
+                .unwrap_or_else(|| "download".into());
+            *destination = std::env::temp_dir().join(file_name);
         }
         DownloadEvent::Finished { path, success, .. } => {
             println!("Download finished: {:?}, success={}", path, success);
@@ -167,8 +171,14 @@ fn inject_js_resource(
 }
 
 fn open_image_dialog(app: AppHandle, source_file: PathBuf, file_name: &str) {
+    let download_dir = app
+        .path()
+        .download_dir()
+        .unwrap_or_else(|_| std::env::temp_dir());
+
     app.dialog()
         .file()
+        .set_directory(download_dir)
         .set_file_name(file_name)
         .save_file(move |target_path| {
             if let Some(target) = target_path {
