@@ -1,64 +1,55 @@
-console.log("Notification Observer loaded");
-const seenNotifications = new Set();
+(() => {
+  if (window.__outlookNotificationObserver) return;
+  const delivered = new WeakMap();
+  const pending = new WeakSet();
 
-// Every 5 seconds
-setInterval(() => {
-  const pane = document.querySelector('[data-app-section="NotificationPane"]');
+  async function send(title, body) {
+    const invoke = window.__TAURI__?.core?.invoke;
+    if (!invoke) throw new Error("Tauri core API is unavailable");
+    await invoke("send_notification", { title, body });
+  }
 
-  if (pane) {
-    const firstChild = pane.firstElementChild;
+  function scan(root = document) {
+    const panes = [...root.querySelectorAll('[data-app-section="NotificationPane"]')];
+    if (root.matches?.('[data-app-section="NotificationPane"]')) panes.push(root);
+    const enclosingPane = root.closest?.('[data-app-section="NotificationPane"]');
+    if (enclosingPane && !panes.includes(enclosingPane)) panes.push(enclosingPane);
+    panes.forEach(pane => {
+      pane.querySelectorAll('button, [role="button"]').forEach(card => {
+        const data = window.extractNotificationData(card);
+        if (!data?.valid) return;
+        const fingerprint = JSON.stringify([data.name, data.title, data.preview]);
+        if (delivered.get(card) === fingerprint || pending.has(card)) return;
+        pending.add(card);
+        send("Neue Mail von " + data.name, [data.title, data.preview].filter(Boolean).join("\n"))
+          .then(() => {
+            delivered.set(card, fingerprint);
+          })
+          .catch(error => {
+            console.error("Outlook notification delivery failed:", error);
+          })
+          .finally(() => pending.delete(card));
+      });
+    });
+  }
 
-    if (firstChild && firstChild.firstElementChild) {
-      var nodeCLone =
-        firstChild.firstElementChild.firstElementChild.cloneNode(true);
-
-      const data = window.extractNotificationData(nodeCLone);
-      const notificationId =
-        `${data.name}_${data.title.substring(0, 50)}`.substring(0, 100);
-
-      if (seenNotifications.has(notificationId)) {
-        console.log(
-          "Duplicate notification detected, skipping:",
-          notificationId,
-        );
-        return;
+  const observer = new MutationObserver(records => {
+    // Examine added nodes immediately, including toasts removed in the same
+    // render batch. Unrelated Outlook mutations must not postpone detection.
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          scan(node);
+        }
       }
-      seenNotifications.add(notificationId);
-
-      const notifier = new TauriNotifier();
-      notifier.send(data.name, data.title);
     }
-  }
-
-  console.log(`🔌 Tauri available: ${!!window.__TAURI__}`);
-  console.log("─".repeat(50));
-}, 1000);
-
-console.log("Observer started!");
-
-class TauriNotifier {
-  constructor() {
-    this.invoke = window.__TAURI__?.core?.invoke;
-    if (!this.invoke) {
-      return;
-    }
-  }
-
-  async send(title, body) {
-    if (!this.invoke) return false;
-    try {
-      await this.invoke("send_notification", { title, body });
-      console.log(`Notification send: ${title}`);
-      return true;
-    } catch (error) {
-      console.error("Invoke failed:", error);
-      return false;
-    }
-  }
-}
-
-// devconsole: sendNotification('test', 'test')
-window.sendNotification = function (name, title) {
-  const notifier = new TauriNotifier();
-  notifier.send("New Mail From: " + name, title);
-};
+    scan();
+  });
+  // Observe the document itself: Outlook can replace the root while booting.
+  observer.observe(document, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["role", "data-app-section", "aria-live"] });
+  window.__outlookNotificationObserver = observer;
+  // Retry failed IPC and discover cards already present when injected.
+  setInterval(scan, 3000);
+  scan();
+  window.sendNotification = (name, title) => send("Neue Mail von " + name, title);
+})();

@@ -1,30 +1,16 @@
- function extractNotificationData(button) {
-  const name = extractName(button);
-
-  const title = extractTitle(button);
-
-  const data = { name, title };
-  console.table(data);
-
-  return data;
+function extractNotificationData(card) {
+  // Mail toast: avatar column, then sender, subject and preview.
+  // Partial cards and nested action buttons must not throw.
+  const content = card?.children?.[1];
+  const name = content?.children?.[0]?.children?.[0]?.textContent?.trim() || "";
+  const title = content?.children?.[1]?.textContent?.trim() || "";
+  const preview = content?.children?.[2]?.textContent?.trim() || "";
+  return {
+    name: name || "Unknown Sender",
+    title: title || "No Title",
+    preview,
+    valid: Boolean(content && content.children.length >= 2 && (name || title || preview)),
+  };
 }
 
-function extractName(button) {
-  const firstDiv = button.children[1].children[0].children[0];
-  const text = firstDiv?.textContent?.trim();
-  return text || "Unknown Sender";
-}
-
-function extractTitle(button) {
-  const titleContainer = button.children[1].children[1].children[0].children[0];
-  const text = titleContainer?.textContent?.trim();
-  return text || "No Title";
-}
-
-if (typeof window !== "undefined") {
-  window.extractNotificationData = extractNotificationData;
-}
-
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = { extractNotificationData };
-}
+if (typeof window !== "undefined") window.extractNotificationData = extractNotificationData;

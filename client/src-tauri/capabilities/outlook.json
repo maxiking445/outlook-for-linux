@@ -1,0 +1,15 @@
+{
+  "identifier": "outlook",
+  "description": "Restricted bridge for the supported Outlook origins.",
+  "windows": ["main"],
+  "local": false,
+  "remote": {
+    "urls": [
+      "https://outlook.office.com/*",
+      "https://outlook.office365.com/*",
+      "https://outlook.live.com/*",
+      "https://outlook.cloud.microsoft/*"
+    ]
+  },
+  "permissions": ["allow-outlook-bridge"]
+}
