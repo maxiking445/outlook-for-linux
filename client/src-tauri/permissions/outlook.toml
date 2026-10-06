@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "allow-outlook-bridge"
+description = "Allow the Outlook webview to send notifications and open links."
+commands.allow = ["send_notification", "open_in_browser"]
