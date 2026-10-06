@@ -1,5 +1,5 @@
 name: maxiking445-outlook-for-linux
-version: '1.0.0'
+version: '0.2.0'
 summary: An unofficial Linux desktop wrapper for Microsoft Outlook built with Tauri.
 description: |
   An unofficial Linux desktop wrapper for Microsoft Outlook built with Tauri.

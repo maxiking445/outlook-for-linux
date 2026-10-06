@@ -1,6 +1,6 @@
 [package]
 name = "OutlookClient"
-version = "0.1.0"
+version = "0.2.0"
 description = "An unofficial Linux desktop wrapper for Microsoft Outlook built with Tauri."
 authors = ["maxiking445"]
 license = "GPL 3.0"
