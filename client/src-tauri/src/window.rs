@@ -1,7 +1,6 @@
 use std::fs;
 use std::net::TcpStream;
 use std::path::PathBuf;
-use std::thread;
 use std::time::Duration;
 use tauri::path::BaseDirectory;
 use tauri::webview::DownloadEvent;
@@ -57,6 +56,32 @@ pub fn setup_window(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Erro
     }
 
     builder
+        .initialization_script(format!(
+            r#"(() => {{
+                if (!["outlook.office.com", "outlook.office365.com", "outlook.live.com", "outlook.cloud.microsoft"].includes(location.hostname)) return;
+                const install = () => {{
+                    {}
+                    {}
+                }};
+                if (document.readyState === "loading") {{
+                    document.addEventListener("DOMContentLoaded", install, {{ once: true }});
+                }} else {{
+                    install();
+                }}
+            }})();"#,
+            include_str!("../../src/notification-extractor.js"),
+            include_str!("../../src/notification.js"),
+        ))
+        .on_page_load(|window, payload| {
+            if payload.event() == tauri::webview::PageLoadEvent::Finished
+                && matches!(
+                    payload.url().host_str(),
+                    Some("outlook.office.com" | "outlook.office365.com" | "outlook.live.com" | "outlook.cloud.microsoft")
+                )
+            {
+                inject_js_files(window.clone());
+            }
+        })
         .on_download(|webview, event| {
             handle_download_event(webview.app_handle().clone(), event);
             true
@@ -74,8 +99,6 @@ pub fn setup_window(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Erro
             .map_err(|_| format!("Invalid path: {:?}", offline_path))?;
         window.navigate(offline_url)?;
     }
-
-    inject_js_files(window);
 
     Ok(())
 }
@@ -119,13 +142,15 @@ fn check_internet() -> bool {
 }
 
 fn inject_js_files(window: WebviewWindow) {
-    thread::spawn(move || {
-        thread::sleep(Duration::from_secs(3));
-        inject_js_resource(&window, "notification.js").expect("failed to inject notification.js");
-        inject_js_resource(&window, "notification-extractor.js")
-            .expect("failed to inject notification-extractor.js");
-        inject_js_resource(&window, "url-change.js").expect("failed to inject url-change.js");
-    });
+    for resource in [
+        "notification-extractor.js",
+        "notification.js",
+        "url-change.js",
+    ] {
+        if let Err(error) = inject_js_resource(&window, resource) {
+            eprintln!("Failed to inject {resource}: {error}");
+        }
+    }
 }
 
 fn inject_js_resource(
