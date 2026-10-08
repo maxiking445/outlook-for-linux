@@ -21,7 +21,7 @@
         const fingerprint = JSON.stringify([data.name, data.title, data.preview]);
         if (delivered.get(card) === fingerprint || pending.has(card)) return;
         pending.add(card);
-        send("Neue Mail von " + data.name, [data.title, data.preview].filter(Boolean).join("\n"))
+        send("New email from " + data.name, [data.title, data.preview].filter(Boolean).join("\n"))
           .then(() => {
             delivered.set(card, fingerprint);
           })
@@ -51,5 +51,5 @@
   // Retry failed IPC and discover cards already present when injected.
   setInterval(scan, 3000);
   scan();
-  window.sendNotification = (name, title) => send("Neue Mail von " + name, title);
+  window.sendNotification = (name, title) => send("New email from " + name, title);
 })();
